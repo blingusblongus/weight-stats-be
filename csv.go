@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var numberRe = regexp.MustCompile(`-?[0-9.]+`)
 
 type Measurement struct {
 	MeasuredAt      string  `json:"measured_at"`
@@ -100,11 +103,7 @@ func parseRecord(record []string) (Measurement, error) {
 }
 
 func stripUnit(s string) string {
-	s = strings.TrimSpace(s)
-	for _, suffix := range []string{" lb", " %", " kcal"} {
-		s = strings.TrimSuffix(s, suffix)
-	}
-	return strings.TrimSpace(s)
+	return numberRe.FindString(s)
 }
 
 func parseFloat(s string) (float64, error) {
