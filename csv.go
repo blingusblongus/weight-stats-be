@@ -34,6 +34,9 @@ const csvTimestampLayout = "1/2/2006 3:04 PM"
 
 func parseCSV(r io.Reader) ([]Measurement, error) {
 	reader := csv.NewReader(r)
+	// Newer exports have an unquoted comma in the timestamp, so data rows
+	// have 15 fields while the header has 14. Disable the strict count check.
+	reader.FieldsPerRecord = -1
 
 	// Skip header
 	header, err := reader.Read()
@@ -74,6 +77,15 @@ func parseCSV(r io.Reader) ([]Measurement, error) {
 
 func parseRecord(record []string) (Measurement, error) {
 	var m Measurement
+
+	// Newer exports split the timestamp into two fields ("7/18/2026", " 5:26 AM");
+	// rejoin so both formats parse with the same layout.
+	if len(record) == 15 {
+		joined := make([]string, 0, 14)
+		joined = append(joined, strings.TrimSpace(record[0])+" "+strings.TrimSpace(record[1]))
+		joined = append(joined, record[2:]...)
+		record = joined
+	}
 
 	t, err := time.Parse(csvTimestampLayout, strings.TrimSpace(record[0]))
 	if err != nil {
